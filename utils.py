@@ -70,17 +70,16 @@ def get_limit_from_impact():
     response = requests.get('https://api.prismamonitor.com/v1/collateral/ethereum/0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0/impact')
     data = response.json()["impact"]
     # Extract features and target
-    features = np.array([entry["impact"] for entry in data["impact"]])
-    target = np.array([entry["amount"] for entry in data["impact"]])
+    features = np.array([entry["impact"] for entry in data])
+    target = np.array([entry["amount"] for entry in data])
 
-    # Define the linear function
-    def linear_function(x, a, b):
-        return a * x + b
+    # Define the logarithmic function
+    def log_function(x, a, b):
+        return a * np.log(b * x + 1)
 
-    # Fit the linear function to the data using curve_fit
-    params, covariance = curve_fit(linear_function, features, target)
-    return linear_function(2.0)
-
+    # Fit the logarithmic function to the data using curve_fit
+    params, covariance = curve_fit(log_function, features, target)
+    return log_function(2.0, *params)
 
 from datetime import datetime
 
