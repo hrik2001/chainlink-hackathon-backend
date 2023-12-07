@@ -4,6 +4,8 @@ import schedule
 import time
 from flask_paginate import Pagination, get_page_args
 from utils import result  # Assuming result() is a function in utils module
+# Start the scheduler in a separate thread
+import threading
 
 app = Flask(__name__)
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
@@ -36,43 +38,38 @@ def run_scheduler():
         schedule.run_pending()
         time.sleep(1)
 
-if __name__ == '__main__':
-    # Start the scheduler in a separate thread
-    import threading
-    scheduler_thread = threading.Thread(target=run_scheduler)
-    scheduler_thread.start()
+scheduler_thread = threading.Thread(target=run_scheduler)
+scheduler_thread.start()
 
-    @app.route('/')
-    def serve_cached_data():
-        # Check if data is in the cache, if not, fetch and cache it
-        cached_data = cache.get('cached_data')
-        is_cached = True
-        if cached_data is None:
-            update_cache()  # Manually trigger cache update to get the latest result
-            is_cached = False
+@app.route('/')
+def serve_cached_data():
+    # Check if data is in the cache, if not, fetch and cache it
+    cached_data = cache.get('cached_data')
+    is_cached = True
+    if cached_data is None:
+        update_cache()  # Manually trigger cache update to get the latest result
+        is_cached = False
 
-        cached_data = cache.get('cached_data')
-        cached_data["is_cached"] = is_cached
-        return jsonify(cached_data)
+    cached_data = cache.get('cached_data')
+    cached_data["is_cached"] = is_cached
+    return jsonify(cached_data)
 
-    @app.route('/refresh-cache')
-    def refresh_cache():
-        # Manually trigger cache update
-        update_cache()
-        return jsonify({"message": "Cache refreshed"})
+@app.route('/refresh-cache')
+def refresh_cache():
+    # Manually trigger cache update
+    update_cache()
+    return jsonify({"message": "Cache refreshed"})
 
-    @app.route('/result-history', methods=['GET'])
-    def result_history_page():
-        # Retrieve the result history from the cache
-        result_history = cache.get('result_history') or []
-        
-        # Pagination
-        page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
-        total = len(result_history)
-        pagination_result_history = result_history[offset: offset + per_page]
-        pagination = Pagination(page=page, per_page=per_page, total=total, css_framework='bootstrap4')
-        
-        # Render the result history template with pagination
-        return render_template('result_history.html', result_history=pagination_result_history, pagination=pagination)
-
-    app.run(debug=True)
+@app.route('/result-history', methods=['GET'])
+def result_history_page():
+    # Retrieve the result history from the cache
+    result_history = cache.get('result_history') or []
+    
+    # Pagination
+    page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
+    total = len(result_history)
+    pagination_result_history = result_history[offset: offset + per_page]
+    pagination = Pagination(page=page, per_page=per_page, total=total, css_framework='bootstrap4')
+    
+    # Render the result history template with pagination
+    return render_template('result_history.html', result_history=pagination_result_history, pagination=pagination)

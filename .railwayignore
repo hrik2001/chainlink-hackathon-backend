@@ -1,0 +1,24 @@
+backend/.venv
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+
+# Ignore Django cache files
+*.pyc
+*.pyo
+
+# Ignore Django log files
+*.log
+*.err
+
+# Ignore local db
+*.sqlite3
+
+# Ignore Vim swap file
+*.swp
+*.swo
+*.swn
+
+# Local static files
+media/*
+.venv3.8/*

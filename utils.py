@@ -3,6 +3,7 @@ import requests
 from web3 import Web3
 import pandas as pd
 import numpy as np
+from scipy.optimize import curve_fit
 
 # section 1
 # stability pool size
@@ -64,24 +65,22 @@ def get_mkUSD_circulating_supply():
 def get_stability_pool_size_share():
     return get_stability_pool_size()/get_mkUSD_circulating_supply()
 
-def get_average_impact():
+def get_limit_from_impact():
     # Make the API call to get the impact data
     response = requests.get('https://api.prismamonitor.com/v1/collateral/ethereum/0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0/impact')
-    impact_data = response.json()["impact"]
+    data = response.json()["impact"]
+    # Extract features and target
+    features = np.array([entry["impact"] for entry in data["impact"]])
+    target = np.array([entry["amount"] for entry in data["impact"]])
 
-    # Calculate the average impact
-    total_impact = 0
-    count = 0
-    for data in impact_data:
-        impact = data['impact']
-        if impact != 0:
-            total_impact += impact
-            count += 1
-    try:
-        average_impact = total_impact / count
-    except ZeroDivisionError:
-        average_impact = 0
-    return average_impact
+    # Define the linear function
+    def linear_function(x, a, b):
+        return a * x + b
+
+    # Fit the linear function to the data using curve_fit
+    params, covariance = curve_fit(linear_function, features, target)
+    return linear_function(2.0)
+
 
 from datetime import datetime
 
@@ -166,12 +165,28 @@ def calculate_parkinson_volatility(data):
 
     return parkinson_volatility, average_volatility
 
+def get_value_at_risk():
+    api_url = "https://api.prismamonitor.com/v1/trove/ethereum/0xbf6883a03fd2fcfa1b9fc588ad6193b3c3178f8f/troves?items=10000&page=1&order_by=last_update&desc=true"
+
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx status codes)
+        
+        data = response.json()
+        open_troves = [trove for trove in data['troves'] if trove['status'] == 'Open' and trove['collateral_ratio'] < 1.5]
+        sum_collateral_usd = sum(trove['collateral_usd'] for trove in open_troves)
+        return sum_collateral_usd
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error during API request: {e}")
+
 def result():
     result_dict = {}
     # section 1
     result_dict["stability_pool_share"] = get_stability_pool_size_share()
     # section 2
-    result_dict["average_impact_percent"] = get_average_impact()
+    #result_dict["average_impact_percent"] = get_average_impact()
+    result_dict["value_at_risk"] = get_value_at_risk()
+    result_dict["limit_from_impact"] = get_limit_from_impact()
     
     # section 3
     thirty_days_daily_ohlc = get_daily_ohlc()
