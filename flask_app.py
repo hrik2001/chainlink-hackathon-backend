@@ -29,8 +29,8 @@ def update_cache():
     print("Cache updated at", current_time)
 
 # Schedule the cache update every 30 minutes
-schedule.every(30).seconds.do(update_cache)
-#schedule.every(30).minutes.do(update_cache)
+#schedule.every(30).seconds.do(update_cache)
+schedule.every(30).minutes.do(update_cache)
 
 # Start the scheduled task in a separate thread
 def run_scheduler():
