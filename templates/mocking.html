@@ -1,0 +1,74 @@
+<!-- mocking.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mocking Configuration</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Mocking Configuration</h1>
+        <form method="POST" action="{{ url_for('mocking') }}">
+            {{ form.csrf_token }}
+            <div class="form-group">
+                {{ form.limit_from_impact.label(class="form-control-label") }}
+                {{ form.limit_from_impact(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.stability_pool_share.label(class="form-control-label") }}
+                {{ form.stability_pool_share(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.value_at_risk.label(class="form-control-label") }}
+                {{ form.value_at_risk(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.average_parkinson.label(class="form-control-label") }}
+                {{ form.average_parkinson(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.latest_ema.label(class="form-control-label") }}
+                {{ form.latest_ema(class="form-control") }}
+            </div>
+            <!--
+            <div class="form-group">
+                {{ form.enable_mocking.label(class="form-check-label") }}
+                {{ form.enable_mocking(class="form-check-input") }}
+            </div>
+            -->
+            <div class="form-check">
+                {{ form.enable_mocking(class="form-check-input") }}
+                {{ form.enable_mocking.label(class="form-check-label") }}
+            </div>
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+
+        {% if mocking_enabled %}
+            <div class="alert alert-info mt-4" role="alert">
+                Mocking is enabled with the following values:
+                <ul>
+                    <li><strong>Limit from Impact:</strong> {{ mocked_values.limit_from_impact }}</li>
+                    <li><strong>Stability Pool Share:</strong> {{ mocked_values.stability_pool_share }}</li>
+                    <li><strong>Value at Risk:</strong> {{ mocked_values.value_at_risk }}</li>
+                    <li><strong>Average Parkinson Volatility:</strong> {{ mocked_values.volatility.average_parkinson }}</li>
+                    <li><strong>Latest EMA Volatility:</strong> {{ mocked_values.volatility.latest_ema }}</li>
+                </ul>
+            </div>
+            <!-- Disable Mocking button -->
+            <form method="POST" action="{{ url_for('mocking') }}">
+                {{ form.csrf_token }}
+                <input type="hidden" name="enable_mocking" value="false">
+                <button type="submit" class="btn btn-danger mt-2">Disable Mocking</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</body>
+</html>

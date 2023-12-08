@@ -6,8 +6,11 @@ from flask_paginate import Pagination, get_page_args
 from utils import result  # Assuming result() is a function in utils module
 # Start the scheduler in a separate thread
 import threading
+from flask_wtf import FlaskForm
+from wtforms import FloatField, BooleanField, SubmitField
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key_here'
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 # Function to update the cache periodically
@@ -43,15 +46,26 @@ scheduler_thread.start()
 
 @app.route('/')
 def serve_cached_data():
-    # Check if data is in the cache, if not, fetch and cache it
-    cached_data = cache.get('cached_data')
-    is_cached = True
-    if cached_data is None:
-        update_cache()  # Manually trigger cache update to get the latest result
-        is_cached = False
+    # Check if mocking is enabled and get mocked values from storage
+    mocking_enabled = cache.get('mocking_enabled') or False
+    mocked_values = cache.get('mocked_values') or {}
 
-    cached_data = cache.get('cached_data')
-    cached_data["is_cached"] = is_cached
+    # Check if mocking is enabled, if so, use mocked values regardless of cache presence
+    if mocking_enabled:
+        cached_data = {"timestamp": time.strftime("%Y-%m-%d %H:%M:%S"), "result": mocked_values}
+    else:
+        # Check if data is in the cache, if not, fetch and cache it
+        cached_data = cache.get('cached_data')
+        is_cached = True
+
+        if cached_data is None:
+            # Use the actual result if mocking is not enabled
+            update_cache()  # Manually trigger cache update to get the latest result
+            cached_data = cache.get('cached_data')
+            is_cached = False
+
+        cached_data["is_cached"] = is_cached
+
     return jsonify(cached_data)
 
 @app.route('/refresh-cache')
@@ -73,3 +87,39 @@ def result_history_page():
     
     # Render the result history template with pagination
     return render_template('result_history.html', result_history=pagination_result_history, pagination=pagination)
+
+class MockForm(FlaskForm):
+    limit_from_impact = FloatField('Limit from Impact')
+    stability_pool_share = FloatField('Stability Pool Share')
+    value_at_risk = FloatField('Value at Risk')
+    average_parkinson = FloatField('Average Parkinson Volatility')
+    latest_ema = FloatField('Latest EMA Volatility')
+    enable_mocking = BooleanField('Enable Mocking')
+    submit = SubmitField('Submit')
+
+@app.route('/mocking', methods=['GET', 'POST'])
+def mocking():
+    form = MockForm()
+
+    # Check if mocking is enabled and get mocked values from storage
+    mocking_enabled = cache.get('mocking_enabled') or False
+    mocked_values = cache.get('mocked_values') or {}
+
+    if form.validate_on_submit():
+        # Handle form submission and store values
+        mocked_values = {
+            "limit_from_impact": form.limit_from_impact.data,
+            "stability_pool_share": form.stability_pool_share.data,
+            "value_at_risk": form.value_at_risk.data,
+            "volatility": {
+                "average_parkinson": form.average_parkinson.data,
+                "latest_ema": form.latest_ema.data
+            }
+        }
+        mocking_enabled = form.enable_mocking.data
+
+        # Store mocked values and mocking status in the cache
+        cache.set('mocking_enabled', mocking_enabled)
+        cache.set('mocked_values', mocked_values)
+
+    return render_template('mocking.html', form=form, mocking_enabled=mocking_enabled, mocked_values=mocked_values)
