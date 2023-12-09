@@ -8,10 +8,13 @@ from utils import result  # Assuming result() is a function in utils module
 import threading
 from flask_wtf import FlaskForm
 from wtforms import FloatField, BooleanField, SubmitField
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+CORS(app)
+
 
 # Function to update the cache periodically
 def update_cache():
@@ -65,6 +68,8 @@ def serve_cached_data():
             is_cached = False
 
         cached_data["is_cached"] = is_cached
+        # DUMMY
+        # cached_data["result"]["troves_at_risk"] = 5
 
     return jsonify(cached_data)
 

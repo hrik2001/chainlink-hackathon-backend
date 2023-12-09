@@ -174,7 +174,7 @@ def get_value_at_risk():
         data = response.json()
         open_troves = [trove for trove in data['troves'] if trove['status'] == 'Open' and trove['collateral_ratio'] < 1.5]
         sum_collateral_usd = sum(trove['collateral_usd'] for trove in open_troves)
-        return sum_collateral_usd
+        return sum_collateral_usd, len(open_troves)
     except requests.exceptions.RequestException as e:
         raise Exception(f"Error during API request: {e}")
 
@@ -184,7 +184,10 @@ def result():
     result_dict["stability_pool_share"] = get_stability_pool_size_share()
     # section 2
     #result_dict["average_impact_percent"] = get_average_impact()
-    result_dict["value_at_risk"] = get_value_at_risk()
+    trove_data = get_value_at_risk()
+    result_dict["value_at_risk"] = trove_data[0]
+    result_dict["troves_at_risk"] = trove_data[1]
+
     result_dict["limit_from_impact"] = get_limit_from_impact()
     
     # section 3
